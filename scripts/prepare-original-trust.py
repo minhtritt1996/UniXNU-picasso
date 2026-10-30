@@ -39,8 +39,15 @@ def main():
     args = parser.parse_args()
     sys.path.insert(0, str(args.tree / 'scripts'))
     from unixnu.ipsw import im4p_payload
-    modules = [im4p_payload((args.inputs / name).read_bytes()) for name in
-               ('044-76040-038.dmg.trustcache', '044-76034-038.dmg.trustcache')]
+    # picasso-omp: the trust-cache file names change with the IPSW (they carry the OS
+    # and SystemOS disk-image numbers). Take the two the ipsw step just extracted
+    # instead of pinning the upstream iPad7,1 names.
+    import glob
+    names = sorted(Path(p).name for p in glob.glob(str(args.inputs / '*.dmg.trustcache')))
+    if len(names) != 2:
+        raise SystemExit(f'expected 2 trust caches in {args.inputs}, found {names}')
+    print(f'trust modules: {names}')
+    modules = [im4p_payload((args.inputs / name).read_bytes()) for name in names]
     bundle = bundle_modules(modules)
     # Exercise fail-closed handling against truncation, reordering and mutation.
     for bad in ([modules[0][:-1], modules[1]], list(reversed(modules)),
