@@ -16,18 +16,18 @@ import sys
 
 
 def bundle_modules(modules):
-    expected = ('da88460e6e513438d5307e5c526f76497a74754476a24da29f239f0c90120fc2',
-                'd121ba89167e03aafd00fa687c30cd8ebc4ccafd10c1408adb2ba3de12403651')
+    # picasso-omp: the upstream code pinned the iPad7,1 (21H461) module hashes and the
+    # resulting bundle hash. This board now targets the iPhone10,3 16.7.16 (20H392) IPSW,
+    # whose two modules are different bytes, so the check is structural: each module must
+    # be a complete version-2 trust cache (magic 2, header 24 bytes, length field matches).
     if len(modules) != 2:
         raise ValueError('Require static and System trust-cache modules')
-    for module, digest in zip(modules, expected):
-        if (hashlib.sha256(module).hexdigest() != digest or len(module) < 24 or
+    for module in modules:
+        if (len(module) < 24 or
                 struct.unpack_from('<I', module)[0] != 2 or
                 len(module) != 24 + struct.unpack_from('<I', module, 20)[0] * 24):
             raise ValueError('Require complete, exact original version-2 trust modules')
     bundle = struct.pack('<3I', 2, 12, 12 + len(modules[0])) + b''.join(modules)
-    if hashlib.sha256(bundle).hexdigest() != '7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7':
-        raise ValueError('Original trust bundle differs')
     return bundle
 
 
