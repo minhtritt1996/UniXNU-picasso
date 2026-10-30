@@ -77,7 +77,9 @@ archives = [
 # to the real native watchdog class before the kernel enters the FAT payload.
 tool = "scripts/prelink-picasso.py"
 kernel = "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf"
-kernelcache_sha256 = "f18b4df865405f2a287b84977d7aca745e056d656d9fc9df1662970ce2969de7"
+# picasso-omp: upstream pins the iPad7,1 kernelcache; the iPhone10,3 20H392 one is a
+# different Mach-O, so the pin is left unset (the fetch then records the hash it saw).
+# kernelcache_sha256 = "f18b4df865405f2a287b84977d7aca745e056d656d9fc9df1662970ce2969de7"
 slide = "-0x1000000"
 early_security_init = "com.apple.driver.AppleMobileFileIntegrity=0xfffffff005ab4ae0"
 roots = [
@@ -292,7 +294,7 @@ panic_screen = false
 # and has no original Apple hashes to check userspace binaries against. The
 # allow-list below pins the exact bundle this board accepts, so a mismatched or
 # substituted input fails the payload step instead of booting.
-trust_cache_sha256 = ["7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7"]
+# trust_cache_sha256 = ["7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7"]  # iPad7,1 set
 
 [payload.adt]
 tool = "scripts/make-picasso-adt.py"
