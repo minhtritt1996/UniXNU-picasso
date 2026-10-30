@@ -11,14 +11,15 @@ kit = "picasso"
 # Target OS image. PLACEHOLDER   select an IPSW whose ARM version is compatible with
 # SM7250 (ARMv8.2 / Cortex-A76). Only needed for the kernel step, not for firmware.
 [ipsw]
-# Same unchanged iPad7,1 iPadOS 17.7.11 image uke (SM7675) and sheng (SM8550) use.
-# SM7250 (ARMv8.2 / Cortex-A76) is instruction-compatible with this kernel source.
-url = "https://updates.cdn-apple.com/2025SpringFCS/fullrestores/122-77166/DCA6CFE8-90E9-4B92-880D-3DE171798E40/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw"
-product = "iPad7,1"
-version = "17.7.11"
-build = "21H461"
-device_class = "j120ap"
-chip_id = 0x8011
+# iPhone X (iPhone10,3, d22ap, A11 t8015): ARMv8.2 like SM7250, and its iOS 16.7.16
+# (20H392) userland matches this port's xnu-8796 era and the phone display profile
+# (1125x2436). Replaces the iPad7,1 17.7.11 image the upstream board used.
+url = "https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw"
+product = "iPhone10,3"
+version = "16.7.16"
+build = "20H392"
+device_class = "d22ap"
+chip_id = 0x8015
 board_id = 12
 fetch = ["KernelCache", "DeviceTree", "StaticTrustCache", "Cryptex1,SystemTrustCache"]
 
@@ -37,7 +38,7 @@ fetch = ["KernelCache", "DeviceTree", "StaticTrustCache", "Cryptex1,SystemTrustC
 # partition table; they are not this device's geometry.
 [userdata]
 first_lba = 0x0
-last_lba = 0xBDEBFA
+last_lba = 0x5000FA   # the `darwin` partition on this device (21,475,864,576 B); root image must fit here
 lba_bytes = 4096
 windows = [
   { name = "OS", component = "OS" },

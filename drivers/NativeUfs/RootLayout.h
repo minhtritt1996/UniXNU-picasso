@@ -114,7 +114,12 @@ static bool findRootLayout (RootLayout *layout, const char **why)
     *why = "GPT entries CRC";
     return false;
   }
-  static const char wanted[] = "userdata";
+  // picasso-omp: this device keeps its Darwin root in the existing `darwin` partition
+  // (21.5 GB, HFS+ iOS rootfs backed up offline) so the Android `userdata` partition is
+  // never touched. The comparison below walks sizeof(wanted) UTF-16 code units, so a
+  // shorter name is fine: the GPT entry's remaining units are NUL just like the tail of
+  // this literal.
+  static const char wanted[] = "darwin";
   bool found = false;
   for (uint32_t index = 0; index < count; index++) {
     const uint8_t *entry = gScratch + index * 128;

@@ -74,9 +74,9 @@ jobs:
       - name: Download the target IPSW
         run: |
           mkdir -p out/ipsw
-          IPSW=out/ipsw/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+          IPSW=out/ipsw/iPhone10_3_16.7.16_20H392_Restore.ipsw
           HOST=updates.cdn-apple.com
-          URL="https://$HOST/2025SpringFCS/fullrestores/122-77166/DCA6CFE8-90E9-4B92-880D-3DE171798E40/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw"
+          URL="https://$HOST/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw"
           if [ ! -s "$IPSW" ]; then
             if ! curl --fail --retry 3 --retry-all-errors --connect-timeout 30 -o "$IPSW" "$URL"; then
               IP=$(curl -s -H 'accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=$HOST&type=A" \
@@ -96,14 +96,14 @@ jobs:
           mkdir -p out/picasso/logs
           TREE=$(python3 ./unixnu --prepare)
           python3 ./unixnu ipsw fetch OS KernelCache StaticTrustCache Cryptex1,SystemTrustCache 2>&1 | tee out/picasso/logs/actions-ipsw.log
-          echo "UNIXNU_KERNELCACHE=$PWD/out/ipsw/21H461/kernelcache.decompressed" >> "$GITHUB_ENV"
-          python3 scripts/prepare-original-trust.py --tree "$TREE" --inputs out/ipsw/21H461 --output out/picasso/original-static-system.bundle 2>&1 | tee out/picasso/logs/actions-trust.log
+          echo "UNIXNU_KERNELCACHE=$PWD/out/ipsw/20H392/kernelcache.decompressed" >> "$GITHUB_ENV"
+          python3 scripts/prepare-original-trust.py --tree "$TREE" --inputs out/ipsw/20H392 --output out/picasso/original-static-system.bundle 2>&1 | tee out/picasso/logs/actions-trust.log
 
       - name: Prepare volatile APFS Data from the original OS
         run: |
           python3 ./unixnu defconfig picasso_defconfig
           sudo "$(command -v python3)" scripts/prepare-picasso-ram-data.py \
-            --tree "$UNIXNU_TREE" --source out/ipsw/21H461/044-76040-038.dmg \
+            --tree "$UNIXNU_TREE" --source "$(ls -S out/ipsw/20H392/*.dmg | head -1)" \
             --output out/picasso/ram-data --config out/picasso/.config \
             2>&1 | tee out/picasso/logs/actions-ram-data.log
 
@@ -177,6 +177,17 @@ jobs:
               print('payload.img', p.stat().st_size, 'bytes')
           EOF
 
+      # picasso-omp: build the Darwin root image (SHNGROOT manifest + the unchanged OS and
+      # SystemOS disk images from the IPSW) so it can be written to this device's `darwin`
+      # partition instead of the Android `userdata` the upstream port uses.
+      - name: Build Darwin root image (SHNGROOT + OS + SystemOS)
+        continue-on-error: true
+        run: |
+          mkdir -p out/picasso/logs
+          python3 ./unixnu build userdata 2>&1 | tee out/picasso/logs/actions-userdata.log || true
+          ls -lh out/picasso/userdata/ 2>/dev/null || true
+          cat out/picasso/userdata/userdata-root.json 2>/dev/null || true
+
       - name: Compose boot image (BootShim + repo FD + payload as ramdisk)
         run: |
           python3 ./unixnu bootimg \
@@ -212,5 +223,7 @@ jobs:
             device/out/picasso/ram-data/*.json
             device/out/picasso/ram-data/data.dbrdisk
             device/out/picasso/.config
+            device/out/picasso/userdata/**
+            device/out/picasso/logs/actions-userdata.log
           if-no-files-found: warn
           retention-days: 7
