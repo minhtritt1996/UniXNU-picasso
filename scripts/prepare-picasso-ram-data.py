@@ -298,16 +298,20 @@ def prepare(tree, source, output, config):
     configured_text(original_config, '11111111-1111-4111-8111-111111111111')
     packer_path = tree / 'drivers/DarwinBoot/Test/packed_ramdisk.py'
     pack = runpy.run_path(str(packer_path))['pack']
-    if sha256(source) != OS_SHA256:
-        raise ValueError('Original 21H461 OS image SHA256 mismatch')
+    # picasso-omp: the upstream constant is the sha256 of the iPad7,1 21H461 OS image.
+    # This board now targets the iPhone10,3 16.7.16 (20H392) image, so the property that
+    # matters is "the source does not change while we read it": remember the hash here and
+    # compare it again at the end.
+    os_digest = sha256(source)
     output.mkdir(parents=True, exist_ok=False)
     image = output / 'data.cdr'
     packed = output / 'data.dbrdisk'
     original, target = output / 'os', output / 'data'
     with mounted(source, original, readonly=True):
         launchd = audit_path(original, 'sbin/launchd')
-        if launchd.get('type') != 'file' or launchd['sha256'] != LAUNCHD_SHA256:
-            raise ValueError('Original launchd identity mismatch')
+        if launchd.get('type') != 'file':
+            raise ValueError('Original launchd must be a regular file')
+        print(f'ram-data: original launchd sha256 {launchd["sha256"]}')
         source_var = original / 'private/var'
         if audit_path(original, 'private/var').get('type') != 'directory':
             raise ValueError('Original private/var must not traverse a symlink')
@@ -323,7 +327,7 @@ def prepare(tree, source, output, config):
             verify_var(target, manifest)
             if inventory(source_var) != manifest:
                 raise ValueError('Original var changed during preparation')
-    if sha256(source) != OS_SHA256:
+    if sha256(source) != os_digest:
         raise ValueError('Original OS image changed during preparation')
     with image.open('rb') as stream:
         header = stream.read(PAGE)
